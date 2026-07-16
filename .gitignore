@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Environment dan secrets
+.env
+.env.*
+!.env.example
+
+# WhatsApp session
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Agent runtime data
+.agent-data/
+.agent-worktrees/
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Editor
+.vscode/
+.idea/
+
+# Operating system
+Thumbs.db
+.DS_Store
