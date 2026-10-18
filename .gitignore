@@ -26,3 +26,6 @@ logs/
 # Operating system
 Thumbs.db
 .DS_Store
+# Mini Bank
+data/
+src/index_backup.js

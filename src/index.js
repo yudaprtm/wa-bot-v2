@@ -1,4 +1,7 @@
-require("dotenv").config();
+const path = require("node:path");
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+const { createMiniBank } = require("./mini-bank");
+const miniBank = createMiniBank();
 
 const qrcode = require("qrcode-terminal");
 const { Client, LocalAuth } = require("whatsapp-web.js");
@@ -14,7 +17,7 @@ const config = {
 
   defaultProvider: (process.env.DEFAULT_PROVIDER || "groq").toLowerCase(),
   defaultModel:
-    process.env.DEFAULT_MODEL || "llama-3.3-70b-versatile",
+    process.env.DEFAULT_MODEL || "openai/gpt-oss-120b",
 
   temperature: Number.parseFloat(process.env.TEMPERATURE || "0.5"),
   maxTokens: Number.parseInt(process.env.MAX_TOKENS || "2048", 10),
@@ -30,7 +33,7 @@ const config = {
 
 const AVAILABLE_MODELS = {
   groq: [
-    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-120b",
   ],
   gemini: [
     "gemini-2.5-flash",
@@ -54,9 +57,7 @@ function validateConfig() {
   }
 
   if (!config.groqApiKey && !config.geminiApiKey) {
-    throw new Error(
-      "Minimal salah satu GROQ_API_KEY atau GEMINI_API_KEY harus diisi."
-    );
+    console.warn("[AI] API key belum diisi. Menu dan Mini Bank tetap tersedia.");
   }
 }
 
@@ -85,7 +86,7 @@ const gemini = config.geminiApiKey
  * mempunyai provider dan model sendiri.
  */
 let activeProvider = config.defaultProvider;
-let activeModel = config.defaultModel;
+let activeModel = ensureValidModel(activeProvider, config.defaultModel);
 
 /**
  * Menentukan apakah pengirim diperbolehkan memakai bot.
@@ -299,6 +300,16 @@ async function sendLongReply(message, text) {
 
 function getHelpText() {
   return [
+    "🤖 *MENU UTAMA*", "",
+    `1. ${config.botPrefix} <pertanyaan>`, "   Tanya asisten AI", "",
+    "2. !mini bank", "   Catat dan cek keuangan", "",
+    "3. !fitur", "   Fitur lainnya — segera hadir", "",
+    "Pengaturan AI: !help ai",
+  ].join("\n");
+}
+
+function getAIHelpText() {
+  return [
     "*WhatsApp AI Bot*",
     "",
     `Kirim pertanyaan:`,
@@ -331,7 +342,17 @@ function getHelpText() {
  * Memproses command selain prompt AI.
  */
 async function handleCommand(message) {
-  const body = message.body.trim();
+  const body = (message.body || "").trim();
+
+  if (/^!help\s+ai$/i.test(body)) {
+    await message.reply(getAIHelpText());
+    return true;
+  }
+
+  if (body.toLowerCase() === "!fitur") {
+    await message.reply("🚧 *FITUR LAINNYA*\nSegera hadir.\n\nMenu utama: !help");
+    return true;
+  }
 
   if (body.toLowerCase() === "!help") {
     await message.reply(getHelpText());
@@ -513,6 +534,11 @@ client.on("message", async (message) => {
       return;
     }
 
+    // Finance commands never go to an AI provider.
+    if (await miniBank.handle(message)) {
+      return;
+    }
+
     const commandHandled = await handleCommand(message);
 
     if (commandHandled) {
@@ -520,7 +546,7 @@ client.on("message", async (message) => {
     }
 
     const prefix = config.botPrefix;
-    const body = message.body.trim();
+    const body = (message.body || "").trim();
 
     if (!body.toLowerCase().startsWith(prefix.toLowerCase())) {
       return;
