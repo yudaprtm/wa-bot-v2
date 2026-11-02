@@ -1,6 +1,6 @@
 const path = require("node:path");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
-const { createMiniBank } = require("./mini-bank");
+const { createMiniBank, SHARED_USERS, SHARED_GROUPS, resolveSender } = require("./mini-bank");
 const miniBank = createMiniBank();
 
 const qrcode = require("qrcode-terminal");
@@ -91,12 +91,17 @@ let activeModel = ensureValidModel(activeProvider, config.defaultModel);
 /**
  * Menentukan apakah pengirim diperbolehkan memakai bot.
  */
-function isAllowedUser(message) {
+function isAllowedUser(message, senderId) {
+  if (message.from?.endsWith("@g.us")) {
+    return SHARED_GROUPS.includes(message.from) && SHARED_USERS.includes(senderId) &&
+      (config.allowedUsers.length === 0 || config.allowedUsers.includes(senderId) ||
+        config.allowedUsers.includes(message.author));
+  }
   if (config.allowedUsers.length === 0) {
     return true;
   }
 
-  return config.allowedUsers.includes(message.from);
+  return config.allowedUsers.includes(senderId) || config.allowedUsers.includes(message.from);
 }
 
 /**
@@ -521,8 +526,9 @@ client.on("message", async (message) => {
       return;
     }
 
-    if (!isAllowedUser(message)) {
-      console.warn(`[Security] Pesan ditolak dari ${message.from}`);
+    const senderId = await resolveSender(message, client);
+    if (!isAllowedUser(message, senderId)) {
+      console.warn(`[Security] Pesan ditolak dari ${message.from}; pengirim=${senderId || "tidak tersedia"}`);
       return;
     }
 
@@ -535,7 +541,7 @@ client.on("message", async (message) => {
     }
 
     // Finance commands never go to an AI provider.
-    if (await miniBank.handle(message)) {
+    if (await miniBank.handle(message, { senderId })) {
       return;
     }
 
