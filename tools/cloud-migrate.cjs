@@ -15,7 +15,7 @@ async function migrate({url,secret,dir=DIR,fetcher=fetch}){
  await backupExisting(source,target);const data=exportData(source),digest=crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
  if(data.ops.length>600||data.entries.length>2000)throw Error('Database lebih besar dari batas migrasi otomatis. Backup aman; perlu migrasi bertahap.');
  const headers={'Content-Type':'application/json','Authorization':'Bearer '+secret,'User-Agent':'MiniBankWA/2.0'};
- const setup=await fetcher(url+'/api/admin/install',{method:'POST',headers,signal:AbortSignal.timeout(30000)});if(!setup.ok)throw Error('Persiapan database cloud gagal. Periksa binding DB dan Secrets.');
+ const setup=await fetcher(url+'/api/admin/install',{method:'POST',headers,signal:AbortSignal.timeout(30000)});if(!setup.ok)throw Error('Persiapan cloud HTTP '+setup.status+': '+await setup.text());
  // Block accidental local financial writes as soon as cloud import begins.
  fs.writeFileSync(path.join(dir,'cloud-cutover.json'),JSON.stringify({url,pending:true,backup:target,startedAt:new Date().toISOString()},null,2),{mode:0o600});
  const res=await fetcher(url+'/api/admin/import',{method:'POST',headers,body:JSON.stringify(data),signal:AbortSignal.timeout(120000)});const result=await res.json();if(!res.ok||result.digest!==digest)throw Error(result.error||'Verifikasi impor gagal. Bot jangan dijalankan sampai diverifikasi.');

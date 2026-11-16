@@ -15,7 +15,7 @@ async function route(req,env){
  const url=new URL(req.url),p=url.pathname,method=req.method;
  if(!p.startsWith('/api/'))return env.ASSETS.fetch(req);
  if(url.protocol!=='https:' && !['localhost','127.0.0.1'].includes(url.hostname))return json({error:'HTTPS wajib.'},403);
- if(!env.DB||!env.PIN_HASH||!env.AUTH_SECRET||!env.BOT_SECRET||env.AUTH_SECRET.length<32||env.BOT_SECRET.length<32)return json({error:'Konfigurasi hosting belum lengkap.'},503);
+ if(!env.DB||!env.PIN_HASH||!env.AUTH_SECRET||!env.BOT_SECRET||env.AUTH_SECRET.length<32||env.BOT_SECRET.length<32)return json({error:'Konfigurasi hosting belum lengkap.',diagnostic:{version:'config-check-1',DB:!!env.DB,AUTH_SECRET_length:String(env.AUTH_SECRET||'').length,PIN_HASH_length:String(env.PIN_HASH||'').length,BOT_SECRET_length:String(env.BOT_SECRET||'').length}},503);
  const db=env.DB,bank=createMiniBank(db),bearer=req.headers.get('authorization')||'';
  const authorized=equal(bearer,'Bearer '+env.BOT_SECRET);
  if(p==='/api/admin/install'&&method==='POST'){if(!authorized)return json({error:'Akses ditolak.'},401);await db.batch(schema.map(sql=>db.prepare(sql)));return json({ok:true});}
