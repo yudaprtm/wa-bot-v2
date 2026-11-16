@@ -269,23 +269,19 @@ async function loadHistory(reset = true) {
   } finally { $("load-more").disabled = false; }
 }
 function setKind(value) {
-  kind = value; $("entry-error").hidden = true;
-  for (const button of document.querySelectorAll("[data-kind]")) button.classList.toggle("selected",button.dataset.kind === value);
-  text("entry-title",value === "salary" ? "Catat gaji" : value === "in" ? "Tambah pemasukan" : "Catat pengeluaran");
-  text("amount-label",value === "salary" ? "Total gaji" : "Nominal");
-  $("wallet-field").hidden = value === "salary"; $("description-fields").hidden = value === "salary";
-  $("salary-preview").hidden = value !== "salary"; $("description").required = value !== "salary";
-  text("amount-help",value === "salary" ? "Minimal Rp 6.000.000 untuk alokasi Saving." : "Rupiah bulat, tanpa koma.");
-  salaryPreview();
+  kind = value === "in" ? "in" : "out";
+  $("entry-error").hidden = true;
+  for (const b of document.querySelectorAll("[data-kind]")) b.classList.toggle("selected",b.dataset.kind === kind);
+  text("entry-title",kind === "in" ? "Tambah pemasukan" : "Catat pengeluaran");
+  text("amount-label","Nominal");
+  $("wallet-field").hidden = false;
+  $("description-fields").hidden = false;
+  $("description").required = true;
+  text("amount-help","Rupiah bulat, tanpa koma.");
 }
 function setWallet(value) {
   wallet = value;
   for (const button of document.querySelectorAll("[data-wallet]")) button.classList.toggle("selected",button.dataset.wallet === value);
-}
-function salaryPreview() {
-  const digits = $("amount").value.replace(/\./g,"");
-  const amount = /^\d+$/.test(digits) ? BigInt(digits) : 0n;
-  text("salary-daily",money(amount > 6000000n ? amount-6000000n : 0n));
 }
 function openEntry(value) {
   if (!data) return toast("Tunggu sampai data tersambung.",true);
@@ -314,12 +310,10 @@ async function saveEntry(event) {
   let error = "";
   if (!valid || amount <= 0n) error = "Isi nominal rupiah bulat yang lebih dari nol.";
   else if (amount > 1000000000000n) error = "Nominal maksimal Rp 1.000.000.000.000.";
-  else if (kind === "salary" && amount < 6000000n) error = "Gaji minimal Rp 6.000.000 untuk pembagian Saving tetap.";
-  else if (kind !== "salary" && !$("description").value.trim()) error = "Tambahkan keterangan singkat agar catatan mudah ditemukan.";
+  else if (!$("description").value.trim()) error = "Tambahkan keterangan singkat agar catatan mudah ditemukan.";
   else if (kind === "out" && amount > BigInt(data.balances[wallet])) error = "Saldo "+(wallet === "saving" ? "Saving" : "Harian")+" belum cukup.";
   if (error) { text("entry-error",error); $("entry-error").hidden = false; return; }
-  const payload = kind === "salary" ? {kind:"salary",amount:String(amount)} :
-    {kind:"entry",wallet,direction:kind,amount:String(amount),description:$("description").value.trim(),category:$("category").value};
+  const payload = {kind:"entry",wallet,direction:kind,amount:String(amount),description:$("description").value.trim(),category:$("category").value};
   const fingerprint = JSON.stringify(payload);
   if (fingerprint !== lastPayload) { lastPayload = fingerprint; requestKey = crypto.randomUUID(); }
   saveBusy(true);
@@ -375,7 +369,6 @@ $("amount").addEventListener("input",() => {
     $("amount").value = raw ? new Intl.NumberFormat("id-ID").format(BigInt(raw)) : "";
     $("amount").setCustomValidity("");
   } else $("amount").setCustomValidity("Gunakan angka positif, tanpa koma atau tanda minus.");
-  salaryPreview();
 });
 $("logout").addEventListener("click",async () => {
   try { await api("/api/logout",{method:"POST",body:"{}"}); showLogin(); toast("Kamu sudah keluar."); }
