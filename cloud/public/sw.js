@@ -1,6 +1,6 @@
 "use strict";
-const CACHE = "minibank-cloud-manual-v1";
-const SHELL = ["/", "/ui.css", "/app-pin.js", "/manifest.webmanifest", "/assets/icon-192.png", "/assets/icon-512.png", "/assets/apple-touch-icon.png", "/assets/icon.svg"];
+const CACHE = "minibank-cloud-manual-v2";
+const SHELL = ["/", "/ui-manual-v2.css", "/app-manual-v2.js", "/manifest.webmanifest", "/assets/icon-192.png", "/assets/icon-512.png", "/assets/apple-touch-icon.png", "/assets/icon.svg"];
 self.addEventListener("install", (event) => { event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener("activate", (event) => {
   event.waitUntil(caches.keys().then((names) => Promise.all(names.filter((name) => name !== CACHE).map((name) => caches.delete(name)))).then(() => self.clients.claim()));
