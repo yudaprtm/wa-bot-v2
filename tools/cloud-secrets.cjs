@@ -1,0 +1,4 @@
+'use strict';
+const {randomBytes,createHmac}=require('node:crypto');
+const {askHiddenPin}=require('../web/prompt');
+(async()=>{let pin=await askHiddenPin('Buat PIN bersama (6 digit): ');if(!/^\d{6}$/.test(pin)||pin!==await askHiddenPin('Ulangi PIN: '))throw Error('PIN harus sama dan terdiri dari 6 digit.');const auth=randomBytes(32).toString('hex'),bot=randomBytes(32).toString('hex');console.log('\nSalin ketiga nilai ke Cloudflare Settings > Variables and Secrets (tipe Secret).\nJangan masukkan ke GitHub atau frontend.\n');console.log('AUTH_SECRET='+auth+'\nPIN_HASH='+createHmac('sha256',auth).update('mini-bank-pin:'+pin).digest('hex')+'\nBOT_SECRET='+bot);console.log('\nSimpan BOT_SECRET untuk langkah migrasi. PIN tidak dicetak.');})().catch(e=>{console.error(e.message);process.exitCode=1;});

@@ -131,7 +131,15 @@ const BANK_MENU = [
 ].join("\n");
 
 function createMiniBank({ dataDir = path.join(__dirname, "..", "data"), now = () => new Date(),
-  logger = console, sharedUsers = SHARED_USERS, sharedGroups = SHARED_GROUPS } = {}) {
+  logger = console, sharedUsers = SHARED_USERS, sharedGroups = SHARED_GROUPS, requireExisting = false } = {}) {
+  const cloudConfig = path.join(dataDir, "cloud-config.json");
+  if (process.env.MINIBANK_CLOUD_URL || process.env.MINIBANK_BOT_SECRET || fs.existsSync(cloudConfig) || fs.existsSync(path.join(dataDir, "cloud-cutover.json"))) {
+    if (requireExisting) throw new Error("Mini Bank sudah memakai cloud. Buka URL hosting; server UI lokal dinonaktifkan.");
+    return require("./mini-bank-cloud.cjs").createRemoteBank({dataDir,logger});
+  }
+  if (requireExisting && !fs.existsSync(path.join(dataDir, "keuangan.db"))) {
+    throw new Error("Database bot tidak ditemukan. Letakkan UI di folder bot yang sudah berjalan; jangan membuat database pengganti.");
+  }
   fs.mkdirSync(dataDir, { recursive: true });
   const db = new DatabaseSync(path.join(dataDir, "keuangan.db"));
   db.exec("PRAGMA busy_timeout = 5000; PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON;");
@@ -153,13 +161,17 @@ function createMiniBank({ dataDir = path.join(__dirname, "..", "data"), now = ()
   const resetKey = "saving-daily-reset-v1:" + (sharedWallet || "no-shared-wallet");
   const initialized = hadMeta && db.prepare("SELECT 1 FROM mini_bank_meta WHERE key=?").get(resetKey);
   const legacyExists = tableExists("transactions");
-  // User authorized a one-time reset for the shared wallet. Keep a complete,
-  // consistent backup before changing any old financial data.
-  let resetBackup;
+  // UI integration is additive: NEVER reset/delete existing financial records.
+  if (legacyExists && !tableExists("mini_bank_ops") &&
+      db.prepare("SELECT 1 FROM transactions LIMIT 1").get()) {
+    db.close();
+    throw new Error("Database legacy belum memakai Saving/Harian. Data tidak diubah. Migrasi perlu ditinjau sebelum UI diaktifkan.");
+  }
+  if (requireExisting && (!tableExists("mini_bank_ops") || !tableExists("mini_bank_entries"))) {
+    db.close();
+    throw new Error("Schema database bot tidak cocok. Tidak ada data yang diubah.");
+  }
   try {
-    if (!initialized && legacyExists && sharedWallet) {
-      resetBackup = snapshot("keuangan-sebelum-saving-harian-" + randomUUID());
-    }
     db.exec("BEGIN IMMEDIATE");
     db.exec(
       "CREATE TABLE IF NOT EXISTS mini_bank_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);" +
@@ -179,10 +191,6 @@ function createMiniBank({ dataDir = path.join(__dirname, "..", "data"), now = ()
       " WHERE type='gaji' AND deleted_at IS NULL;"
     );
     if (!initialized) {
-      if (legacyExists && sharedWallet) {
-        const erase = prepare("DELETE FROM transactions WHERE user_id=?");
-        for (const id of [...members, sharedWallet]) erase.run(id);
-      }
       db.prepare("INSERT INTO mini_bank_meta(key,value) VALUES(?,?)").run(resetKey, now().toISOString());
     }
     db.exec("COMMIT");
@@ -191,17 +199,26 @@ function createMiniBank({ dataDir = path.join(__dirname, "..", "data"), now = ()
     db.close();
     throw new Error("Persiapan Saving/Harian dibatalkan: " + error.message);
   }
-  if (resetBackup) logger.log?.("[MiniBank] Catatan lama dompet bersama dikosongkan satu kali. Backup: " + resetBackup);
   let backupDay;
   function dailyBackup() {
     const today = jakartaDate(now());
     if (backupDay === today) return;
     const filename = "keuangan-" + today;
-    if (!fs.existsSync(path.join(dataDir, "backups", filename + ".db"))) snapshot(filename);
+    const canonical = path.join(dataDir, "backups", filename + ".db");
+    if (!fs.existsSync(canonical)) {
+      const temporary = snapshot(filename + "-" + randomUUID());
+      try {
+        if (fs.existsSync(canonical)) fs.unlinkSync(temporary);
+        else fs.renameSync(temporary, canonical);
+      } catch (error) {
+        if (!fs.existsSync(canonical)) throw error;
+        if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+      }
+    }
     backupDay = today;
   }
   const rowsFor = prepare(
-    "SELECT e.*, o.id AS operation_id,o.business_date,o.type,o.actor FROM mini_bank_entries e " +
+    "SELECT e.*, o.id AS operation_id,o.business_date,o.type,o.actor,o.message_id,o.created_at FROM mini_bank_entries e " +
     "JOIN mini_bank_ops o ON o.id=e.op_id WHERE o.owner=? AND o.deleted_at IS NULL ORDER BY o.id DESC,e.id DESC"
   );
   const operationByMessage = prepare("SELECT * FROM mini_bank_ops WHERE owner=? AND message_id=?");
@@ -316,10 +333,24 @@ function createMiniBank({ dataDir = path.join(__dirname, "..", "data"), now = ()
     }
     const old = operationByMessage.get(owner, messageId);
     if (old) return { duplicate: true, id: old.id, deleted: !!old.deleted_at };
-    // Financial writes fail safely if a consistent backup cannot be made.
     dailyBackup();
     db.exec("BEGIN IMMEDIATE");
     try {
+      // Two Node processes (WA and Web) may write to this SQLite database.
+      // Recheck balances/deduplication AFTER taking SQLite's write lock.
+      const concurrent = operationByMessage.get(owner, messageId);
+      if (concurrent) {
+        db.exec("COMMIT");
+        return { duplicate: true, id: concurrent.id, deleted: !!concurrent.deleted_at };
+      }
+      if (type === "gaji" && salaryInCycle.get(owner, cycle)) {
+        throw new InputError("Gaji untuk periode ini sudah dicatat. Periksa riwayat sebelum mencatat lagi.");
+      }
+      for (const entry of entries) {
+        if (entry.direction === "out" && BigInt(entry.amount) > balance(owner, entry.wallet)) {
+          throw new InputError("Saldo " + title(entry.wallet) + " tidak cukup.");
+        }
+      }
       const stamp = now();
       insertOp.run(owner, actor, messageId, type, jakartaDate(stamp), stamp.toISOString(), cycle || null);
       const op = operationByMessage.get(owner, messageId);
@@ -460,7 +491,117 @@ function createMiniBank({ dataDir = path.join(__dirname, "..", "data"), now = ()
     }
     return true;
   }
-  return { handle, close: () => db.close() };
+  // Web API uses these same ledger rules; it cannot select another person's owner.
+  function webOwner(actor) {
+    if ((!members.includes(actor) && actor !== "web-shared") || !sharedWallet) throw new InputError("Akun tidak memiliki akses dompet bersama.");
+    return sharedWallet;
+  }
+  function webMonth(month) {
+    const value = month || jakartaDate(now()).slice(0, 7);
+    if (!/^20\d{2}-(0[1-9]|1[0-2])$/.test(value)) throw new InputError("Periode bulan tidak valid.");
+    return value;
+  }
+  function webRow(r) {
+    return { id: String(r.id), operationId: String(r.operation_id), date: r.business_date,
+      createdAt: r.created_at, wallet: r.wallet, direction: r.direction, amount: String(r.amount),
+      category: r.category, description: r.description, type: r.type,
+      actor: members.indexOf(r.actor) + 1, source: r.message_id.includes(":web:") ? "web" : "whatsapp" };
+  }
+  function webSnapshot(actor, month) {
+    const owner = webOwner(actor), period = webMonth(month);
+    const all = rows(owner), selected = all.filter((r) => r.business_date.startsWith(period));
+    const sum = (items) => items.reduce((s, r) => s + r.amount, 0n);
+    const saving = total(all.filter((r) => r.wallet === "saving"));
+    const harian = total(all.filter((r) => r.wallet === "harian"));
+    const wallets = {};
+    for (const wallet of ["saving", "harian"]) {
+      const slice = selected.filter((r) => r.wallet === wallet);
+      wallets[wallet] = { income: String(sum(slice.filter((r) => r.direction === "in"))),
+        expense: String(sum(slice.filter((r) => r.direction === "out"))),
+        salary: String(sum(slice.filter((r) => r.type === "gaji" && r.direction === "in"))) };
+    }
+    const categories = new Map();
+    for (const r of selected.filter((r) => r.direction === "out")) {
+      categories.set(r.category, (categories.get(r.category) || 0n) + r.amount);
+    }
+    const nextMonth = dateUTC(period + "-01"); nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
+    const days = new Date(nextMonth - DAY).getUTCDate();
+    const trend = Array.from({length: days}, (_, i) => {
+      const date = period + "-" + String(i + 1).padStart(2, "0");
+      const day = selected.filter((r) => r.business_date === date);
+      return { date, income: String(sum(day.filter((r) => r.direction === "in"))),
+        expense: String(sum(day.filter((r) => r.direction === "out"))) };
+    });
+    const plan = budget(harian, jakartaDate(now()));
+    return { today: jakartaDate(now()), generatedAt: now().toISOString(), month: period,
+      balances: { saving: String(saving), harian: String(harian), total: String(saving + harian) },
+      wallets, monthTotals: { income: String(sum(selected.filter((r) => r.direction === "in"))),
+        expense: String(sum(selected.filter((r) => r.direction === "out"))), count: selected.length },
+      categories: [...categories].sort((a,b) => a[1] > b[1] ? -1 : a[1] < b[1] ? 1 : 0)
+        .map(([name, value]) => ({name, amount: String(value)})),
+      trend, budget: {...plan, daily: String(plan.daily),
+        weeks: plan.weeks.map((w) => ({...w, amount: String(w.amount)}))},
+      recent: selected.slice(0, 6).map(webRow),
+      legacyRecords: legacyExists ? Number(db.prepare("SELECT COUNT(*) AS n FROM transactions WHERE user_id IN (?,?,?)")
+        .get(members[0], members[1], sharedWallet).n) : 0 };
+  }
+  function webHistory(actor, options = {}) {
+    const owner = webOwner(actor), month = webMonth(options.month);
+    const wallet = ["saving", "harian"].includes(options.wallet) ? options.wallet : "";
+    const direction = ["in", "out"].includes(options.direction) ? options.direction : "";
+    const search = String(options.search || "").slice(0, 200).toLocaleLowerCase("id-ID");
+    const items = rows(owner).filter((r) => r.business_date.startsWith(month) &&
+      (!wallet || r.wallet === wallet) && (!direction || r.direction === direction) &&
+      (!search || (r.description + " " + r.category).toLocaleLowerCase("id-ID").includes(search)));
+    const offset = Math.max(0, Math.floor(Number(options.offset) || 0));
+    const limit = Math.min(100, Math.max(1, Math.floor(Number(options.limit) || 25)));
+    return { items: items.slice(offset, offset + limit).map(webRow), total: items.length, offset, limit };
+  }
+  function webExport(actor, month) {
+    const owner = webOwner(actor), period = webMonth(month);
+    return rows(owner).filter((r) => r.business_date.startsWith(period)).map(webRow);
+  }
+  function webAppend(actor, input, requestId) {
+    const owner = webOwner(actor);
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId || ""))
+      throw new InputError("ID pencatatan tidak valid. Muat ulang halaman.");
+    const key = actor + ":web:" + requestId;
+    const type = input.kind === "salary" ? "gaji" : "entry";
+    const amount = BigInt(parseAmount(String(input.amount ?? "")));
+    let entries, operationType, cycle;
+    if (type === "gaji") {
+      if (amount < SAVING_PER_SALARY) throw new InputError("Gaji minimal Rp6.000.000 untuk alokasi Saving tetap.");
+      entries = [
+        { wallet: "saving", direction: "in", amount: SAVING_PER_SALARY, category: "Gaji", description: "Alokasi Saving dari gaji" },
+        { wallet: "harian", direction: "in", amount: amount - SAVING_PER_SALARY, category: "Alokasi gaji", description: "Sisa gaji untuk belanja harian" },
+      ];
+      operationType = "gaji"; cycle = paydayInfo(jakartaDate(now())).cycle;
+    } else {
+      if (input.kind !== "entry" || !["saving", "harian"].includes(input.wallet) || !["in", "out"].includes(input.direction))
+        throw new InputError("Jenis pencatatan atau dompet tidak valid.");
+      const description = String(input.description || "").replace(/\s+/g, " ").trim();
+      const category = String(input.category || "").replace(/\s+/g, " ").trim() || inferCategory(input.direction, description);
+      if (!description || description.length > 250) throw new InputError("Isi keterangan, maksimal 250 karakter.");
+      if (category.length > 40) throw new InputError("Kategori maksimal 40 karakter.");
+      entries = [{ wallet: input.wallet, direction: input.direction, amount, category, description }];
+      operationType = input.wallet + "_" + input.direction;
+    }
+    const old = operationByMessage.get(owner, key);
+    if (old) {
+      const oldRows = db.prepare("SELECT * FROM mini_bank_entries WHERE op_id=? ORDER BY id");
+      oldRows.setReadBigInts(true);
+      const previous = oldRows.all(old.id);
+      if (old.type !== operationType || entries.length !== previous.length || entries.some((e,i) =>
+        e.wallet !== previous[i].wallet || e.direction !== previous[i].direction || e.amount !== previous[i].amount ||
+        e.category !== previous[i].category || e.description !== previous[i].description)) {
+        throw new InputError("ID pencatatan sudah dipakai untuk data berbeda. Muat ulang formulir.");
+      }
+      return { id: String(old.id), duplicate: true, message: old.deleted_at ? "Catatan ini sudah dikoreksi melalui bot." : "Transaksi sudah tersimpan; tidak dicatat ulang." };
+    }
+    const result = saveOperation(owner, actor, key, operationType, entries, cycle);
+    return { id: String(result.id), duplicate: !!result.duplicate, message: "Pencatatan berhasil disimpan." };
+  }
+  return { handle, webSnapshot, webHistory, webExport, webAppend, close: () => db.close() };
 }
 module.exports = { createMiniBank, BANK_MENU, jakartaDate, parseAmount, resolveMessageId,
-  paydayInfo, budget, SHARED_USERS, SHARED_GROUPS, SAVING_PER_SALARY, resolveSender };
+  paydayInfo, budget, SHARED_USERS, SHARED_GROUPS, SAVING_PER_SALARY, resolveSender, InputError };

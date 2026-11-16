@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f7f8fc"><meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="Catat keuangan bersama. Saving dan Harian dalam satu tempat, tersambung dengan Mini Bank WhatsApp.">
+  <title>Mini Bank · Keuangan bersama</title>
+  <link rel="manifest" href="/manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"><link rel="stylesheet" href="/ui.css">
+  <script src="/app-pin.js" defer></script>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 8V6a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h14v10H6a3 3 0 0 1-3-3V7"/><path d="M20 12h-5v5h5"/><path d="M17 14.5h.01"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2 7M3 4v7h7"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h17M8 15l4-5 4 3 5-7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v16m-6-6 6 6 6-6"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 20V4m-6 6 6-6 6 6"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M20 3c-9 0-16 4-16 10a7 7 0 0 0 7 7c6 0 9-8 9-17ZM4 21l11-11"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18M7 15h3m4 0h3m-10 3h3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 8a9 9 0 0 0-15-3L3 8m0-5v5h5m-4 8a9 9 0 0 0 15 3l2-3m0 5v-5h-5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 4H4v16h6m-2-8h13m-5-5 5 5-5 5"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z"/></symbol>
+</defs></svg>
+
+<div id="boot" class="boot"><div class="brand-mark">m<span>•</span></div><span class="spinner"></span><p>Menyiapkan ruang keuanganmu…</p></div>
+
+<main id="login-screen" class="login-screen" hidden>
+  <section class="login-story">
+    <a class="brand" href="/"><span class="brand-mark">m<span>•</span></span><span>mini bank<span class="brand-dot">.</span></span></a>
+    <div class="login-copy"><span class="eyebrow">RUANG KEUANGAN BERSAMA</span><h1>Lebih rapi.<br>Lebih tenang.</h1><p>Dua dompet, satu cerita.<br>Catat hari ini, nikmati langkah berikutnya.</p></div>
+    <div class="login-visual" aria-hidden="true"><div class="visual-ring"></div><div class="floating-card"><span class="mini-icon mint"><svg><use href="#i-leaf"/></svg></span><div><small>Saving</small><strong>Untuk masa depan.</strong></div><span class="tiny-dot"></span></div><div class="floating-card second"><span class="mini-icon purple"><svg><use href="#i-wallet"/></svg></span><div><small>Harian</small><strong>Untuk hidup hari ini.</strong></div><span class="tiny-dot purple-dot"></span></div></div>
+    <p class="story-foot"><svg class="icon"><use href="#i-shield"/></svg> Terhubung dengan catatan Mini Bank WhatsApp</p>
+  </section>
+  <section class="login-panel"><div class="login-form-wrap"><span class="pill"><span class="tiny-dot"></span> Selamat datang kembali</span><h2>Masuk ke Mini Bank</h2><p class="muted">Satu PIN bersama untuk kalian berdua.</p>
+    <form id="login-form"><label for="pin">PIN bersama</label><div class="password-wrap"><input id="pin" name="pin" class="pin-input" type="password" inputmode="numeric" autocomplete="current-password" pattern="[0-9]{6}" minlength="6" maxlength="6" aria-describedby="pin-help" required placeholder="••••••"><button type="button" id="pin-toggle" class="icon-button" aria-label="Tampilkan PIN"><svg class="icon"><use href="#i-eye"/></svg></button></div><p class="field-hint" id="pin-help">Masukkan 6 digit PIN yang sama, tanpa username.</p>
+      <label class="check-label"><input id="remember" type="checkbox" checked> Tetap masuk selama 7 hari</label>
+      <p id="login-error" class="form-error" role="alert" hidden></p><button class="primary wide" type="submit" id="login-submit">Masuk <svg class="icon"><use href="#i-arrow"/></svg></button>
+    </form><p class="login-note"><svg class="icon"><use href="#i-shield"/></svg> Akses ke dompet bersama kalian.</p>
+  </div></section>
+</main>
+
+<div id="app" class="app-shell" hidden>
+  <aside class="sidebar">
+    <a class="brand" href="/"><span class="brand-mark">m<span>•</span></span><span>mini bank<span class="brand-dot">.</span></span></a>
+    <div class="workspace-label">PERSONAL SPACE</div>
+    <nav class="desktop-nav" aria-label="Navigasi utama">
+      <button data-view="dashboard" class="nav-link active"><svg class="icon"><use href="#i-grid"/></svg> Ringkasan</button>
+      <button data-view="history" class="nav-link"><svg class="icon"><use href="#i-history"/></svg> Riwayat</button>
+      <button data-view="budget" class="nav-link"><svg class="icon"><use href="#i-chart"/></svg> Anggaran</button>
+      <button data-view="more" class="nav-link"><svg class="icon"><use href="#i-more"/></svg> Lainnya</button>
+    </nav>
+    <button class="primary sidebar-add" data-add="out"><svg class="icon"><use href="#i-plus"/></svg> Catat transaksi</button>
+    <div class="sidebar-bottom"><div class="shared-note"><div class="avatar-stack"><span>1</span><span>2</span></div><div><strong>Dompet bersama</strong><small>Dua anggota, satu tujuan</small></div></div><div class="sync-status"><span class="tiny-dot"></span><span>Database bersama</span></div></div>
+  </aside>
+  <div class="main-wrap">
+    <header class="topbar"><div class="mobile-brand brand"><span class="brand-mark">m<span>•</span></span><span>mini bank.</span></div><div class="breadcrumb">Ruang keuangan <span>/</span> <strong id="breadcrumb-view">Ringkasan</strong></div>
+      <div class="topbar-right"><span id="demo-badge" class="demo-badge" hidden>Demo · Data contoh</span><button id="refresh" class="icon-button" aria-label="Segarkan data"><svg class="icon"><use href="#i-refresh"/></svg></button><span class="topbar-separator"></span><span id="user-avatar" class="user-avatar">P</span><span id="user-name" class="user-name">Pengguna</span></div>
+    </header>
+    <div id="offline-banner" class="status-banner" role="status" hidden>Koneksi terputus. Pencatatan dinonaktifkan sampai terhubung kembali.</div>
+    <div id="error-banner" class="status-banner danger" role="alert" hidden></div>
+    <div id="content" class="content">
+      <div class="page-heading"><div><p class="eyebrow" id="today-label">KEUANGAN BERSAMA</p><h1 id="page-title">Ruang untuk hidup lebih tenang<span>.</span></h1><p id="page-subtitle" class="muted">Lihat kabar keuanganmu, lalu lanjutkan harimu.</p></div><label class="month-control"><svg class="icon"><use href="#i-calendar"/></svg><span class="sr-only">Periode ringkasan dan riwayat</span><input id="month" type="month" required></label></div>
+      <section id="view-dashboard" class="view">
+        <div class="overview-grid">
+          <article class="balance-hero card"><div class="card-kicker"><span class="overline">TOTAL SALDO TERCATAT</span><span class="soft-pill"><span class="tiny-dot"></span> Bersama</span></div><div id="total-balance" class="hero-amount skeleton-text">Rp —</div><p class="hero-caption">Hari ini terjaga. Masa depan tertata.</p><div class="balance-split"><button class="mini-wallet" data-wallet-history="harian"><span class="mini-icon purple"><svg><use href="#i-wallet"/></svg></span><span><small>Transaksi Harian</small><strong id="daily-balance">Rp —</strong></span><svg class="icon arrow-small"><use href="#i-arrow"/></svg></button><button class="mini-wallet" data-wallet-history="saving"><span class="mini-icon mint"><svg><use href="#i-leaf"/></svg></span><span><small>Saving</small><strong id="saving-balance">Rp —</strong></span><svg class="icon arrow-small"><use href="#i-arrow"/></svg></button></div></article>
+          <article class="budget-teaser card"><div class="section-heading"><span class="mini-icon purple subtle"><svg><use href="#i-spark"/></svg></span><span class="overline">LANGKAH MINGGU INI</span></div><p class="muted" id="week-caption">Anggaran beberapa hari berikutnya</p><div id="weekly-amount" class="budget-amount">Rp —</div><p class="daily-hint">Sekitar <strong id="daily-recommendation">Rp —</strong> / hari</p><div class="budget-track"><span></span></div><div class="payday-line"><span id="days-left">— hari menuju gajian</span><strong id="next-payday">25 —</strong></div><button class="text-button" data-view="budget">Lihat rencana anggaran <svg class="icon"><use href="#i-arrow"/></svg></button></article>
+        </div>
+        <div class="quick-actions"><button data-add="out"><span class="mini-icon coral"><svg><use href="#i-up"/></svg></span><span>Catat pengeluaran</span><svg class="icon"><use href="#i-plus"/></svg></button><button data-add="in"><span class="mini-icon mint"><svg><use href="#i-down"/></svg></span><span>Tambah pemasukan</span><svg class="icon"><use href="#i-plus"/></svg></button><button data-add="salary"><span class="mini-icon purple"><svg><use href="#i-spark"/></svg></span><span>Catat gaji</span><svg class="icon"><use href="#i-plus"/></svg></button></div>
+        <div class="analytics-grid"><article class="card cashflow"><div class="section-heading spread"><div><h2>Arus keuangan</h2><p class="muted small">Pemasukan dan pengeluaran bulan ini</p></div><span class="tag" id="chart-period">Bulan ini</span></div><div class="flow-stats"><div><span><i class="legend-dot mint-dot"></i> Uang masuk</span><strong id="month-income">Rp —</strong></div><div><span><i class="legend-dot coral-dot"></i> Uang keluar</span><strong id="month-expense">Rp —</strong></div></div><div id="trend-chart" class="trend-chart" aria-label="Grafik pemasukan dan pengeluaran harian"></div></article>
+          <article class="card categories"><div class="section-heading spread"><h2>Ke mana uangmu?</h2><span class="tag">Pengeluaran</span></div><div id="category-chart" class="category-chart"></div></article></div>
+        <article class="card recent-card"><div class="section-heading spread"><div><h2>Catatan terbaru</h2><p class="muted small">Dari web dan WhatsApp, tetap satu cerita.</p></div><button class="text-button" data-view="history">Lihat semua <svg class="icon"><use href="#i-arrow"/></svg></button></div><div id="recent-list" class="transaction-list"></div></article>
+      </section>
+      <section id="view-history" class="view" hidden><article class="card history-card"><div class="history-toolbar"><label class="search-field"><svg class="icon"><use href="#i-search"/></svg><input id="search" type="search" placeholder="Cari catatan atau kategori" aria-label="Cari catatan"></label><select id="history-wallet" aria-label="Filter dompet"><option value="">Semua dompet</option><option value="harian">Transaksi Harian</option><option value="saving">Saving</option></select><select id="history-direction" aria-label="Filter jenis"><option value="">Semua jenis</option><option value="in">Uang masuk</option><option value="out">Uang keluar</option></select><button id="export-history" class="secondary"><svg class="icon"><use href="#i-download"/></svg><span>Ekspor CSV</span></button></div><div class="history-caption"><span id="history-count">Memuat catatan…</span><span>Semua tanggal dalam WIB</span></div><div id="history-list" class="transaction-list"></div><button id="load-more" class="secondary load-more" hidden>Tampilkan lebih banyak</button></article></section>
+      <section id="view-budget" class="view" hidden><div class="budget-page-grid"><article class="card budget-detail"><span class="pill"><svg class="icon"><use href="#i-spark"/></svg> Rencana yang mengikuti saldomu</span><h2>Cukup sampai gajian<span>.</span></h2><p class="muted">Anggaran berikut hanya memakai saldo Harian. Saving tetap untuk tujuanmu.</p><div class="budget-highlight"><span>Acuan belanja per hari</span><strong id="budget-page-daily">Rp —</strong></div><div class="budget-facts"><div><small>Saldo Harian</small><strong id="budget-page-balance">Rp —</strong></div><div><small>Gajian berikutnya</small><strong id="budget-page-payday">—</strong></div><div><small>Sisa hari</small><strong id="budget-page-days">—</strong></div></div><p class="note">Dihitung ulang dari saldo hari ini sampai sehari sebelum tanggal 25 berikutnya. Pembagian mingguan dimulai hari ini.</p></article><article class="card weekly-card"><h2>Rencana per minggu</h2><p class="muted small">Batas belanja proporsional dengan jumlah hari.</p><div id="weeks-list" class="weeks-list"></div><div id="budget-warning" class="inline-warning" hidden>Saldo Harian belum mencukupi. Anggaran belanja saat ini Rp 0.</div></article></div></section>
+      <section id="view-more" class="view" hidden><div class="more-grid"><article class="card"><span class="mini-icon purple"><svg><use href="#i-wallet"/></svg></span><h2>Satu ruang, dua dompet</h2><p class="muted">Input lewat web atau bot WhatsApp akan masuk ke catatan yang sama. Ringkasan disegarkan otomatis setiap 60 detik saat halaman terbuka.</p><button class="secondary" id="refresh-more"><svg class="icon"><use href="#i-refresh"/></svg> Segarkan sekarang</button></article><article class="card"><span class="mini-icon mint"><svg><use href="#i-download"/></svg></span><h2>Bawa catatanmu</h2><p class="muted">Unduh catatan periode terpilih sebagai CSV untuk dibuka di Excel atau aplikasi spreadsheet.</p><button class="secondary" id="export-more">Unduh CSV <svg class="icon"><use href="#i-arrow"/></svg></button></article><article class="card install-card"><span class="mini-icon purple"><svg><use href="#i-plus"/></svg></span><h2>Selalu dekat</h2><p class="muted" id="install-hint">Tambahkan Mini Bank ke layar utama dari menu browser. Di iPhone: Bagikan → Tambahkan ke Layar Utama.</p><button id="install-button" class="secondary" hidden>Pasang aplikasi</button></article><article class="card"><span class="mini-icon coral"><svg><use href="#i-shield"/></svg></span><h2>Akses pribadimu</h2><p class="muted">Saldo dipakai bersama oleh dua anggota. Keluar jika menggunakan perangkat bersama. Koreksi pencatatan tetap tersedia melalui bot.</p><button id="logout" class="secondary danger-text"><svg class="icon"><use href="#i-logout"/></svg> Keluar dari aplikasi</button></article></div></section>
+      <footer class="page-footer"><span>Mini Bank <span class="brand-dot">·</span> Dibuat untuk langkah kecil yang berarti.</span><span id="last-sync">Menyambungkan…</span></footer>
+    </div>
+  </div>
+  <nav class="bottom-nav" aria-label="Navigasi seluler"><button data-view="dashboard" class="active"><svg class="icon"><use href="#i-grid"/></svg><span>Ringkasan</span></button><button data-view="history"><svg class="icon"><use href="#i-history"/></svg><span>Riwayat</span></button><button class="mobile-add" data-add="out" aria-label="Catat transaksi"><span><svg class="icon"><use href="#i-plus"/></svg></span><small>Catat</small></button><button data-view="budget"><svg class="icon"><use href="#i-chart"/></svg><span>Anggaran</span></button><button data-view="more"><svg class="icon"><use href="#i-more"/></svg><span>Lainnya</span></button></nav>
+</div>
+
+<dialog id="entry-dialog" class="entry-dialog"><form id="entry-form"><div class="sheet-handle"></div><div class="sheet-heading"><div><span class="eyebrow">SATU CATATAN KECIL</span><h2 id="entry-title">Catat pengeluaran</h2></div><button type="button" id="close-entry" class="icon-button" aria-label="Tutup formulir"><svg class="icon"><use href="#i-close"/></svg></button></div>
+  <div class="segmented type-switch"><button type="button" data-kind="out" class="selected">Uang keluar</button><button type="button" data-kind="in">Uang masuk</button><button type="button" data-kind="salary">Gaji</button></div>
+  <div id="wallet-field"><label>Dompet</label><div class="wallet-select"><button type="button" data-wallet="harian" class="selected"><svg class="icon"><use href="#i-wallet"/></svg><span>Transaksi Harian<small id="form-daily-balance">Rp —</small></span><span class="radio-dot"></span></button><button type="button" data-wallet="saving"><svg class="icon"><use href="#i-leaf"/></svg><span>Saving<small id="form-saving-balance">Rp —</small></span><span class="radio-dot"></span></button></div></div>
+  <label for="amount" id="amount-label">Nominal</label><div class="amount-field"><span>Rp</span><input id="amount" name="amount" inputmode="numeric" autocomplete="off" placeholder="0" required maxlength="17" aria-describedby="amount-help"></div><p id="amount-help" class="field-hint">Rupiah bulat, tanpa koma.</p>
+  <div id="salary-preview" class="salary-preview" hidden><div><span>Ke Saving</span><strong>Rp 6.000.000</strong></div><div><span>Ke Harian</span><strong id="salary-daily">Rp 0</strong></div><p>Otomatis dibagi dalam satu pencatatan. Satu gaji per periode tanggal 25–24.</p></div>
+  <div id="description-fields"><label for="description">Untuk apa?</label><input id="description" maxlength="250" autocomplete="off" placeholder="Contoh: makan siang, belanja, atau bonus"><label for="category">Kategori</label><select id="category"><option value="">Pilih otomatis dari keterangan</option><option>Makan &amp; minum</option><option>Transport</option><option>Belanja</option><option>Tagihan</option><option>Kesehatan</option><option>Hiburan</option><option>Gaji</option><option>Bonus</option><option>Usaha</option><option>Lainnya</option></select></div>
+  <p id="entry-error" class="form-error" role="alert" hidden></p><div class="sheet-footer"><span class="save-note"><svg class="icon"><use href="#i-check"/></svg> Tersimpan ke catatan bersama</span><button id="save-entry" class="primary wide" type="submit"><svg class="icon"><use href="#i-check"/></svg> Simpan catatan</button></div>
+</form></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden><svg class="icon"><use href="#i-check"/></svg><span></span></div>
+</body></html>

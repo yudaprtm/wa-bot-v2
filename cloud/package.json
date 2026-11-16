@@ -1,0 +1,14 @@
+{
+  "name": "mini-bank-cloud",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "test": "node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "wrangler": "4.162.0"
+  }
+}
